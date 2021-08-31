@@ -5,8 +5,8 @@
 
 SECONDS=0 # builtin bash timer
 ZIPNAME="QuicksilveR-RealmeX3-$(date '+%Y%m%d-%H%M').zip"
-TC_DIR="$HOME/tc/proton-clang"
-DEFCONFIG="x3_defconfig"
+TC_DIR="/home/madriyana/android/toolchains/proton-clang-master"
+DEFCONFIG="nethunter_defconfig"
 
 export PATH="$TC_DIR/bin:$PATH"
 
@@ -24,13 +24,11 @@ if [[ $1 = "-r" || $1 = "--regen" ]]; then
 	exit
 fi
 
-if [[ $1 = "-c" || $1 = "--clean" ]]; then
-	rm -rf out
-fi
+
 
 mkdir -p out
 make O=out ARCH=arm64 $DEFCONFIG
-
+make O=out ARCH=arm64 menuconfig
 echo -e "\nStarting compilation...\n"
 make -j$(nproc --all) O=out ARCH=arm64 CC=clang LD=ld.lld AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- Image.gz dtbo.img
 

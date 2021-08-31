@@ -8192,10 +8192,14 @@ static inline void reset_eenv(struct energy_env *eenv)
  */
 static inline struct energy_env *get_eenv(struct task_struct *p, int prev_cpu)
 {
-	struct energy_env *eenv;
-	cpumask_t cpumask_possible_cpus;
-	int cpu = smp_processor_id();
-	int i;
+
+	struct cpumask *cpus = this_cpu_cpumask_var_ptr(select_idle_mask);
+	struct sched_domain *this_sd;
+	u64 avg_cost, avg_idle;
+	u64 time, cost;
+	s64 delta;
+	int cpu, nr = INT_MAX;
+
 
 	eenv = &(per_cpu(eenv_cache, cpu));
 	reset_eenv(eenv);
@@ -8209,8 +8213,15 @@ static inline struct energy_env *get_eenv(struct task_struct *p, int prev_cpu)
 	eenv->util_delta = task_util_est(p);
 	eenv->util_delta_boosted = boosted_task_util(p);
 
-	cpumask_and(&cpumask_possible_cpus, &p->cpus_allowed, cpu_online_mask);
-	eenv->max_cpu_count = cpumask_weight(&cpumask_possible_cpus);
+	cpumask_and(cpus, sched_domain_span(sd), &p->cpus_allowed);
+
+	for_each_cpu_wrap(cpu, cpus, target) {
+		if (!--nr)
+			return -1;
+		if (idle_cpu(cpu))
+			break;
+	}
+
 
 	for (i=0; i < eenv->max_cpu_count; i++)
 		eenv->cpu[i].cpu_id = -1;
